@@ -92,69 +92,386 @@ body {
     color: var(--primary-gold);
 }
 
-/* ---------- Hero Section ---------- */
+/* =============================================
+   REIMAGINED HERO SECTION – 'ALLURE OF FOREVER'
+   (replaces old hero completely)
+   ============================================= */
 .hero {
     height: 100vh;
+    min-height: 700px;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 0 20px;
+    padding: 0 5%;
     position: relative;
     background: linear-gradient(135deg, #faf9f6 0%, #f5efe7 100%);
+    overflow: hidden;
 }
 
+/* Animated background SVG pattern */
+.hero-bg-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hero-bg-pattern svg {
+    width: 100%;
+    height: 100%;
+    animation: subtleBreath 12s ease-in-out infinite alternate;
+}
+
+@keyframes subtleBreath {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.03);
+    }
+}
+
+/* Gold corner accents – framing the content elegantly */
+.hero-accent {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-color: var(--primary-gold);
+    border-style: solid;
+    z-index: 2;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.hero-accent--top-left {
+    top: 60px;
+    left: 60px;
+    border-width: 2px 0 0 2px;
+}
+
+.hero-accent--top-right {
+    top: 60px;
+    right: 60px;
+    border-width: 2px 2px 0 0;
+}
+
+.hero-accent--bottom-left {
+    bottom: 60px;
+    left: 60px;
+    border-width: 0 0 2px 2px;
+}
+
+.hero-accent--bottom-right {
+    bottom: 60px;
+    right: 60px;
+    border-width: 0 2px 2px 0;
+}
+
+/* Hero content block */
 .hero-content {
+    position: relative;
+    z-index: 3;
     max-width: 800px;
+    margin: 0 auto;
+    animation: fadeInUp 1s ease-out forwards;
 }
 
-.hero-logo {
-    width: 240px;
-    margin: 0 auto 2rem;
+.hero-content img.hero-logo {
+    width: 200px;
+    margin: 0 auto 2.5rem;
     display: block;
     mix-blend-mode: multiply;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.06));
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.06));
 }
 
+/* Gold divider with diamond accent */
+.hero-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 1.5rem;
+    animation: fadeIn 1.5s ease-out forwards;
+}
+
+.hero-divider-line {
+    display: block;
+    width: 60px;
+    height: 1px;
+    background-color: var(--primary-gold);
+}
+
+.hero-divider-dot {
+    font-size: 0.6rem;
+    color: var(--primary-gold);
+    line-height: 1;
+    transform: rotate(45deg);
+}
+
+/* Typography */
 .subtitle {
     font-size: 0.85rem;
-    letter-spacing: 4px;
+    letter-spacing: 5px;
     text-transform: uppercase;
     color: var(--primary-gold);
     margin-bottom: 1rem;
+    font-weight: 500;
+    animation: fadeIn 1.5s ease-out forwards;
 }
 
-.hero h1 {
+.hero-headline {
     font-family: var(--font-heading);
-    font-size: 3.5rem;
+    font-size: 4rem;
     font-weight: 400;
-    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    color: var(--text-dark);
+    margin-bottom: 2rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    animation: fadeInUp 1.8s ease-out forwards;
+    position: relative;
+    display: inline-block;
 }
 
-.hero .description {
-    font-size: 1.1rem;
+/* Subtle underline glow effect on hover */
+.hero-headline::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    width: 60px;
+    height: 2px;
+    background: var(--primary-gold);
+    transform: translateX(-50%);
+    transition: width 0.5s ease;
+    opacity: 0.7;
+}
+
+.hero-headline:hover::after {
+    width: 100%;
+}
+
+.description {
+    font-size: 1.15rem;
     color: var(--text-light);
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
     font-weight: 300;
+    line-height: 1.8;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    animation: fadeInUp 2s ease-out forwards;
 }
 
+/* Call-to-action group */
+.hero-cta-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    animation: fadeInUp 2.2s ease-out forwards;
+}
+
+/* Primary gold button */
 .cta-btn {
     display: inline-block;
-    padding: 15px 40px;
+    padding: 16px 42px;
     background-color: var(--primary-gold);
     color: #fff;
     text-decoration: none;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 0.9rem;
-    transition: background-color 0.3s, transform 0.3s;
-    border: none;
-    cursor: pointer;
+    letter-spacing: 2.5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 2px solid var(--primary-gold);
+    border-radius: 0;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.cta-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.15);
+    transition: left 0.4s ease;
+    z-index: -1;
+}
+
+.cta-btn:hover::before {
+    left: 0;
 }
 
 .cta-btn:hover {
     background-color: #a88544;
-    transform: translateY(-2px);
+    border-color: #a88544;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(197, 160, 89, 0.35);
+}
+
+/* Secondary outlined button */
+.cta-btn-secondary {
+    display: inline-block;
+    padding: 16px 42px;
+    background: transparent;
+    color: var(--primary-gold);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 2px solid var(--primary-gold);
+    border-radius: 0;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.cta-btn-secondary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: var(--primary-gold);
+    transition: height 0.4s ease;
+    z-index: -1;
+}
+
+.cta-btn-secondary:hover::before {
+    height: 100%;
+}
+
+.cta-btn-secondary:hover {
+    color: #fff;
+    border-color: var(--primary-gold);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(197, 160, 89, 0.15);
+}
+
+/* Scroll-down indicator */
+.scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+    opacity: 0.7;
+    animation: fadeIn 2.5s ease-out forwards;
+}
+
+.scroll-text {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--text-light);
+    margin-bottom: 8px;
+}
+
+.scroll-line-container {
+    width: 2px;
+    height: 40px;
+    background: rgba(197, 160, 89, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.scroll-line {
+    width: 2px;
+    height: 100%;
+    background: var(--primary-gold);
+    border-radius: 2px;
+    animation: scrollPulse 2s ease-in-out infinite;
+}
+
+@keyframes scrollPulse {
+    0%, 100% {
+        transform: translateY(-100%);
+    }
+    50% {
+        transform: translateY(100%);
+    }
+}
+
+/* Animation keyframes used in hero */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments for hero */
+@media (max-width: 768px) {
+    .hero-headline {
+        font-size: 2.6rem;
+    }
+    
+    .hero-accent {
+        width: 40px;
+        height: 40px;
+        top: 30px;
+        left: 30px;
+        bottom: 30px;
+        right: 30px;
+    }
+    
+    .hero-accent--top-left {
+        top: 30px;
+        left: 30px;
+    }
+    
+    .hero-accent--top-right {
+        top: 30px;
+        right: 30px;
+    }
+    
+    .hero-accent--bottom-left {
+        bottom: 30px;
+        left: 30px;
+    }
+    
+    .hero-accent--bottom-right {
+        bottom: 30px;
+        right: 30px;
+    }
+    
+    .hero-cta-group {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .cta-btn, .cta-btn-secondary {
+        width: 100%;
+        text-align: center;
+    }
 }
 
 /* ---------- Sections Common ---------- */
@@ -264,7 +581,7 @@ section {
     transition: transform 0.3s;
     border-radius: 8px;
     border: 1px solid #f0f0f0;
-    position: relative; /* helps with featured badge positioning */
+    position: relative;
 }
 
 .product-card:hover {
