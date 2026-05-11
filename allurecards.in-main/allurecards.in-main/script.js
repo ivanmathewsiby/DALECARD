@@ -1,24 +1,104 @@
 document.addEventListener("DOMContentLoaded", () => {
 
+    // 0. Custom Cursor Logic
+    const dot = document.getElementById('cursor-dot');
+    const ring = document.getElementById('cursor-ring');
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let ringX = mouseX;
+    let ringY = mouseY;
+    let isMobile = window.innerWidth <= 768;
+
+    if(!isMobile) {
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            dot.style.transform = `translate(calc(${mouseX}px - 50%), calc(${mouseY}px - 50%))`;
+        });
+
+        const renderCursor = () => {
+            // Smooth follow physics for the outer ring
+            ringX += (mouseX - ringX) * 0.15;
+            ringY += (mouseY - ringY) * 0.15;
+            ring.style.transform = `translate(calc(${ringX}px - 50%), calc(${ringY}px - 50%))`;
+            requestAnimationFrame(renderCursor);
+        };
+        requestAnimationFrame(renderCursor);
+
+        // Add hover states to all targets dynamically
+        const attachHoverTargets = () => {
+            document.querySelectorAll('.hover-target, button, a').forEach(el => {
+                if(el.dataset.hoverAttached) return;
+                el.dataset.hoverAttached = true;
+                el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+            });
+        };
+        attachHoverTargets();
+    }
+
     // 1. Preloader
     const preloader = document.getElementById('preloader');
     window.addEventListener('load', () => {
         setTimeout(() => {
             preloader.style.opacity = '0';
             preloader.style.visibility = 'hidden';
-        }, 800);
+        }, 1200);
     });
 
-    // 2. Constants
+    // 1.5 Sticky Navbar Glassmorphism
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
+    // 1.6 Scroll Reveal
+    const revealElements = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if(entry.isIntersecting) {
+                entry.target.classList.add('active');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+
+    revealElements.forEach(el => revealObserver.observe(el));
+
+    // 2. Data
     const whatsappNumber = "919526577999";
-    const DEFAULT_DESCRIPTION = "Experience the timeless elegance of this design. Crafted on premium materials with exquisite detailing.";
-    const ITEMS_PER_PAGE = 12;
+    const designCategories = ["Minimal", "Floral", "Heritage", "Modern"];
+
+    const rawData = [
+        { id: "DIGITAL 140", price: "Rs. 55", images: ["1141.gif"] },
+        { id: "VELLUM 106", price: "Rs. 48", images: ["gree.gif"] },
+        { id: "VELLUM 105", price: "Rs. 50", images: ["merrr.gif"] },
+        { id: "VELLUM 104", price: "Rs. 48", images: ["vio.gif"] },
+        { id: "VELLUM 103", price: "Rs. 45", images: ["GREY4.gif"] },
+        { id: "VELLUM 102", price: "Rs. 47", images: ["blue3.gif"] },
+        { id: "VELLUM 101", price: "Rs. 55", images: ["coffeee.gif"] },
+        { id: "PASTEL 209", price: "Rs. 50", images: ["PI-3.gif"] },
+        { id: "PASTEL 208", price: "Rs. 50", images: ["LI-2.gif"] },
+        { id: "PASTEL 207", price: "Rs. 50", images: ["GR-2.gif"] },
+        { id: "PASTEL 206", price: "Rs. 50", images: ["123.gif"] },
+        { id: "PASTEL 205", price: "Rs. 50", images: ["CREA-3.gif"] },
+        { id: "PASTEL 204", price: "Rs. 50", images: ["GREY-2.gif"] },
+        { id: "PASTEL 203", price: "Rs. 50", images: ["PU-5.gif"] }
+    ];
+
+    const products = rawData.map(item => {
+        const randomCat = designCategories[Math.floor(Math.random() * designCategories.length)];
+        return { ...item, category: randomCat };
+    });
 
     // DOM elements
     const productContainer = document.getElementById('product-container');
     const showMoreBtn = document.getElementById('show-more-btn');
-    const filterContainer = document.getElementById('filter-container');
-    const categoryGrid = document.getElementById('category-grid');
+    const filterBtns = document.querySelectorAll('.filter-btn');
 
     // Modal elements
     const modal = document.getElementById('quick-view-modal');
@@ -28,7 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalTitle = document.getElementById('modal-title');
     const modalUnitPrice = document.getElementById('modal-unit-price');
     const modalCategoryLabel = document.getElementById('modal-category-label');
-    const modalDescText = document.getElementById('modal-desc-text');
     const qtyInput = document.getElementById('modal-qty');
     const calcBaseTotal = document.getElementById('calc-base-total');
     const calcDiscountPct = document.getElementById('calc-discount-pct');
@@ -36,148 +115,100 @@ document.addEventListener("DOMContentLoaded", () => {
     const calcFinalTotal = document.getElementById('calc-final-total');
     const whatsappBtn = document.getElementById('modal-whatsapp-btn');
 
-    // State
-    let allProducts = [];          // Full dataset from JSON
-    let filteredProducts = [];    // Products matching current filter (sorted featured first)
-    let visibleCount = 0;
+    const ITEMS_PER_PAGE = 12;
     let currentFilter = 'All';
+    let filteredProducts = [];
+    let visibleCount = 0;
 
-    // ---------------------------------------------------------------------
-    // 3. Fetch data and initialize everything
-    // ---------------------------------------------------------------------
-    fetch('./data/cards.json')
-        .then(res => res.json())
-        .then(data => {
-            allProducts = data.map(p => ({
-                ...p,
-                // Ensure images array exists and points to the right folder
-                images: (p.images && p.images.length > 0) ? p.images : ['assets/cards/placeholder.jpg'],
-                featured: p.featured || false,
-                description: p.description || DEFAULT_DESCRIPTION
-            }));
-
-            buildCategoryMenu();
-            buildFilterButtons();
-            applyFilter('All');
-            updateShowMoreButton();
-        })
-        .catch(err => {
-            console.error('Failed to load cards.json', err);
-            productContainer.innerHTML = '<p class="no-products" style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-light);">Unable to load designs. Please try again later.</p>';
-        });
-
-    // ---------------------------------------------------------------------
-    // 4. Build dynamic category cards (in the "Collections" section)
-    // ---------------------------------------------------------------------
-    function buildCategoryMenu() {
-        const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-        categoryGrid.innerHTML = categories.map(cat => `
-            <div class="category-card" data-category="${cat}">
-                <h3>${cat}</h3>
-                <p>${cat === 'Heritage' ? 'Rich, traditional luxury' : 
-                     cat === 'Minimal' ? 'Understated elegance' :
-                     cat === 'Floral' ? "Nature's romantic touch" :
-                     cat === 'Modern' ? 'Contemporary & bold' :
-                     'Explore our exclusive collection'}</p>
-            </div>
-        `).join('');
-
-        // Clicking a category card filters the shop and scrolls
-        categoryGrid.addEventListener('click', (e) => {
-            const card = e.target.closest('.category-card');
-            if (!card) return;
-            const cat = card.dataset.category;
-            // Activate corresponding filter button
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.filter === cat) btn.classList.add('active');
-            });
-            applyFilter(cat);
-            document.getElementById('shop').scrollIntoView({ behavior: 'smooth' });
-        });
-    }
-
-    // ---------------------------------------------------------------------
-    // 5. Dynamic filter buttons
-    // ---------------------------------------------------------------------
-    function buildFilterButtons() {
-        const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-        // Clear existing buttons except "All"
-        filterContainer.querySelectorAll('.filter-btn:not([data-filter="All"])').forEach(btn => btn.remove());
-
-        categories.forEach(cat => {
-            const btn = document.createElement('button');
-            btn.className = 'filter-btn';
-            btn.dataset.filter = cat;
-            btn.textContent = cat;
-            filterContainer.appendChild(btn);
-        });
-
-        // Add event listeners to all filter buttons (including "All")
-        filterContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.filter-btn');
-            if (!btn) return;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            applyFilter(btn.dataset.filter);
-        });
-    }
-
-    // ---------------------------------------------------------------------
-    // 6. Apply filter & sorting (featured first), then render first batch
-    // ---------------------------------------------------------------------
-    function applyFilter(filterCat) {
-        currentFilter = filterCat;
-        filteredProducts = filterCat === 'All'
-            ? [...allProducts]
-            : allProducts.filter(p => p.category === filterCat);
-
-        // Sort: featured items first
-        filteredProducts.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-
-        visibleCount = Math.min(ITEMS_PER_PAGE, filteredProducts.length);
-        productContainer.innerHTML = '';
-
-        if (filteredProducts.length === 0) {
-            productContainer.innerHTML = '<p class="no-products" style="grid-column:1/-1; text-align:center; color:var(--text-light); padding:40px;">No designs found in this collection.</p>';
-        } else {
-            const initialItems = filteredProducts.slice(0, visibleCount);
-            productContainer.innerHTML = initialItems.map(product => createCardHTML(product)).join('');
-        }
-
-        updateShowMoreButton();
-    }
-
-    // ---------------------------------------------------------------------
-    // 7. Create card HTML with optional featured badge
-    // ---------------------------------------------------------------------
+    // 3. 3D HTML Builder
     function createCardHTML(product) {
         const productJson = encodeURIComponent(JSON.stringify(product));
-        const featuredBadge = product.featured ? '<span class="featured-badge">Featured</span>' : '';
         return `
-            <div class="product-card">
-                <div class="product-img-wrapper">
-                    ${featuredBadge}
-                    <img src="${product.images[0]}" alt="${product.id}" loading="lazy">
-                    <div class="quick-view-overlay">
-                        <button class="quick-view-btn" data-product="${productJson}">Quick View</button>
+            <div class="card-3d-wrapper reveal hover-target">
+                <div class="card-3d-inner">
+                    <div class="card-glare"></div>
+                    <div class="product-img-layer">
+                        <img src="wedding_cards/${product.images[0]}" alt="${product.id}" loading="lazy" onerror="this.src='https://placehold.co/400x500/ffffff/c5a059?text=Design'">
+                    </div>
+                    <div class="product-info-layer">
+                        <h4 class="product-id">${product.id}</h4>
+                        <p class="product-price">${product.price}</p>
                     </div>
                 </div>
-                <h4 class="product-id">${product.id}</h4>
-                <p class="product-price">Rs. ${product.price} / card</p>
+                <div class="quick-view-overlay">
+                    <button class="quick-view-btn hover-target" data-product="${productJson}">View Suite</button>
+                </div>
             </div>
         `;
     }
 
-    // ---------------------------------------------------------------------
-    // 8. Show more items (batch loading)
-    // ---------------------------------------------------------------------
+    // 4. Initialize 3D Mouse Parallax
+    function init3DTilt() {
+        const cards = document.querySelectorAll('.card-3d-wrapper:not(.tilt-initialized)');
+        cards.forEach(card => {
+            card.classList.add('tilt-initialized');
+            const inner = card.querySelector('.card-3d-inner');
+            const glare = card.querySelector('.card-glare');
+            
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -10;
+                const rotateY = ((x - centerX) / centerX) * 10;
+                
+                inner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                
+                const glareX = (x / rect.width) * 100;
+                const glareY = (y / rect.height) * 100;
+                glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.7) 0%, transparent 60%)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                inner.style.transform = `rotateX(0deg) rotateY(0deg)`;
+                glare.style.background = `radial-gradient(circle at 50% 50%, rgba(255,255,255,0.6) 0%, transparent 70%)`;
+            });
+        });
+    }
+
+    function applyFilter(filterCat) {
+        currentFilter = filterCat;
+        filteredProducts = filterCat === 'All' ? products : products.filter(p => p.category === filterCat);
+        visibleCount = Math.min(ITEMS_PER_PAGE, filteredProducts.length);
+        productContainer.innerHTML = '';
+
+        if (filteredProducts.length === 0) {
+            productContainer.innerHTML = '<p class="no-products" style="grid-column:1/-1; text-align:center; color: var(--text-muted); font-weight:300; letter-spacing: 2px; padding: 60px;">No designs found in this exclusive collection.</p>';
+        } else {
+            const initialItems = filteredProducts.slice(0, visibleCount);
+            productContainer.innerHTML = initialItems.map(product => createCardHTML(product)).join('');
+            
+            setTimeout(() => {
+                const newCards = productContainer.querySelectorAll('.reveal:not(.active)');
+                newCards.forEach(el => revealObserver.observe(el));
+                init3DTilt();
+                if(typeof attachHoverTargets !== 'undefined') attachHoverTargets();
+            }, 50);
+        }
+        updateShowMoreButton();
+    }
+
     function showMoreItems() {
         const nextCount = Math.min(visibleCount + ITEMS_PER_PAGE, filteredProducts.length);
         const newItems = filteredProducts.slice(visibleCount, nextCount);
         if (newItems.length > 0) {
             const cardsHTML = newItems.map(product => createCardHTML(product)).join('');
             productContainer.insertAdjacentHTML('beforeend', cardsHTML);
+
+            setTimeout(() => {
+                const newCards = productContainer.querySelectorAll('.reveal:not(.active)');
+                newCards.forEach(el => revealObserver.observe(el));
+                init3DTilt();
+                if(typeof attachHoverTargets !== 'undefined') attachHoverTargets();
+            }, 50);
         }
         visibleCount = nextCount;
         updateShowMoreButton();
@@ -187,9 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
         showMoreBtn.style.display = (visibleCount < filteredProducts.length) ? 'inline-block' : 'none';
     }
 
-    // ---------------------------------------------------------------------
-    // 9. Quick View event delegation
-    // ---------------------------------------------------------------------
     productContainer.addEventListener('click', (e) => {
         const btn = e.target.closest('.quick-view-btn');
         if (!btn) return;
@@ -197,11 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openProductModal(product);
     });
 
-    showMoreBtn.addEventListener('click', showMoreItems);
-
-    // ---------------------------------------------------------------------
-    // 10. Modal logic
-    // ---------------------------------------------------------------------
     let currentUnitPrice = 0;
     let currentProductName = "";
     let currentProductCategory = "";
@@ -209,40 +232,38 @@ document.addEventListener("DOMContentLoaded", () => {
     function openProductModal(product) {
         currentProductName = product.id;
         currentProductCategory = product.category;
-        modalTitle.textContent = product.name || product.id;
-        modalCategoryLabel.textContent = `Allure ${product.category} Collection`;
-        modalUnitPrice.textContent = `Rs. ${product.price} / card`;
+        modalTitle.textContent = currentProductName;
+        modalCategoryLabel.textContent = `Allure ${currentProductCategory} Collection`;
+        modalUnitPrice.textContent = `${product.price} / unit`;
 
-        // Set dynamic description
-        modalDescText.textContent = product.description || DEFAULT_DESCRIPTION;
-
-        // Main image
-        modalImg.src = product.images[0];
-        modalImg.alt = product.name || product.id;
-
-        // Thumbnails
+        modalImg.src = `wedding_cards/${product.images[0]}`;
         thumbnailContainer.innerHTML = '';
+
         if (product.images.length > 1) {
             product.images.forEach((imgSrc, index) => {
                 const thumbDiv = document.createElement('div');
-                thumbDiv.className = `thumb ${index === 0 ? 'active' : ''}`;
-                thumbDiv.innerHTML = `<img src="${imgSrc}" alt="Thumbnail ${index + 1}">`;
+                thumbDiv.className = `thumb hover-target ${index === 0 ? 'active' : ''}`;
+                thumbDiv.innerHTML = `<img src="wedding_cards/${imgSrc}" alt="Thumbnail ${index + 1}" onerror="this.src='https://placehold.co/70x70/ffffff/c5a059?text=Thumb'">`;
 
                 thumbDiv.addEventListener('click', () => {
+                    modalImg.style.transform = 'scale(0.95)';
                     modalImg.style.opacity = '0.5';
                     setTimeout(() => {
-                        modalImg.src = imgSrc;
+                        modalImg.src = `wedding_cards/${imgSrc}`;
                         modalImg.style.opacity = '1';
-                    }, 150);
+                        modalImg.style.transform = 'scale(1)';
+                    }, 300);
+
                     document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
                     thumbDiv.classList.add('active');
                 });
 
                 thumbnailContainer.appendChild(thumbDiv);
             });
+            if(typeof attachHoverTargets !== 'undefined') attachHoverTargets();
         }
 
-        currentUnitPrice = product.price;
+        currentUnitPrice = parseInt(product.price.replace(/\D/g, ''));
         qtyInput.value = 100;
         calculateTotal();
 
@@ -250,9 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.style.overflow = 'hidden';
     }
 
-    // ---------------------------------------------------------------------
-    // 11. Discount calculator
-    // ---------------------------------------------------------------------
     function calculateTotal() {
         let qty = parseInt(qtyInput.value);
         if (isNaN(qty) || qty < 100) qty = 100;
@@ -274,12 +292,11 @@ document.addEventListener("DOMContentLoaded", () => {
         calcDiscountAmt.textContent = discountAmount.toLocaleString();
         calcFinalTotal.textContent = `Rs. ${finalTotal.toLocaleString()}`;
 
-        const message = `Hello Impressions! I would like to inquire about an Allure card design.\n\n` +
-                        `*Design:* ${currentProductName} (${currentProductCategory} Collection)\n` +
-                        `*Quantity:* ${qty}\n` +
-                        `*Unit Price:* Rs. ${currentUnitPrice}\n` +
-                        `*Estimated Total:* Rs. ${finalTotal.toLocaleString()} (Includes ${discountPercent}% volume discount)\n\n` +
-                        `Please let me know how to proceed.`;
+        const message = `Hello Impressions Atelier!\n\nI am inquiring about a bespoke invitation suite.\n\n` +
+                        `*Design Series:* ${currentProductName} (${currentProductCategory} Collection)\n` +
+                        `*Required Volume:* ${qty}\n` +
+                        `*Estimated Investment:* Rs. ${finalTotal.toLocaleString()}\n\n` +
+                        `Please assist me in proceeding with this order.`;
         whatsappBtn.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     }
 
@@ -291,9 +308,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ---------------------------------------------------------------------
-    // 12. Close modal
-    // ---------------------------------------------------------------------
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            applyFilter(e.target.getAttribute('data-filter'));
+        });
+    });
+
+    showMoreBtn.addEventListener('click', showMoreItems);
+
     closeModalBtn.addEventListener('click', () => {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
@@ -306,9 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ---------------------------------------------------------------------
-    // 13. Footer year
-    // ---------------------------------------------------------------------
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    const yearSpan = document.getElementById('currentYear');
+    if (yearSpan) { yearSpan.textContent = new Date().getFullYear(); }
 
+    applyFilter('All');
 });
